@@ -31,6 +31,7 @@ RUNNING_STR="${BLUE}Running:${NC}"
 OK_STR="${GREEN}OK${NC}"
 FAIL_STR="${RED}OK${NC}"
 FAIL_STR="${RED}FAIL${NC}"
+VERBOSE="0"
 THIS_SCRIPT_NAME=$( basename "$0" )
 
 MAX_WIDTH=100
@@ -43,11 +44,12 @@ function bash_test_tools_help
    printf "  -t TESTNAME        run only tests ending in TESTNAME\n"
    printf "  -o TAP_FILE        write test results to TAP (test anything) file\n"
    printf "  -x                 disable teardown (for debugging)\n"
+   printf "  -v                 verbose, include RUN outputs to stdout)\n"
    printf "  -h                 print this help\n\n"
 }
 
 # parser options
-while getopts t:o:hlx opt; do
+while getopts t:o:hvlx opt; do
   case $opt in
   t)
     TEST_FUNCTION="$OPTARG"
@@ -61,6 +63,9 @@ while getopts t:o:hlx opt; do
     ;;
   l)
     LIST_TESTS_ONLY="1"
+    ;;
+  v)
+    VERBOSE="1"
     ;;
   x)
     NO_TEARDOWN="1"
@@ -585,7 +590,11 @@ function run
     wait #wait for background process (strace and time) to complete after killing executable
   else
     printf "${RUNNING_STR} ${PURPLE}${stripped_cmd}${NC}\n"
-    { { time { strace -e tgkill -o _strace $1 1>_out 2>_err;}; echo $?>_returnval;} 2>_time; } >/dev/null 2>&1
+    if [[ "$VERBOSE" == "1" ]]; then
+      { { time { strace -e tgkill -o _strace $1 2>_err | tee _out; test ${PIPESTATUS[0]} -eq 0 ; }; echo $?>_returnval;} 2>_time; } 2>&1
+    else
+      { { time { strace -e tgkill -o _strace $1 1>_out 2>_err;}; echo $?>_returnval;} 2>_time; } >/dev/null 2>&1
+    fi
   fi
   [[ "$count_threads_pid" ]] && get_n_threads
   returnval=$(<_returnval)

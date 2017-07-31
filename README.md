@@ -27,6 +27,7 @@ function test_find_local_directory
   assert_output_contains "some_file.txt"
 }
 
+#Or, append "-v" to the end to see the standout as well
 testrunner
 ```
 Bash Test Tools is intended to be a simple to use framework for testing executables inside the
